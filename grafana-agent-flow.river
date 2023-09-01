@@ -1,0 +1,75 @@
+otelcol.receiver.otlp "default" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/otelcol.receiver.otlp/
+
+	// configures the default grpc endpoint "0.0.0.0:4317"
+	grpc { 
+              endpoint = "0.0.0.0:4317" 
+        }
+	// configures the default http/protobuf endpoint "0.0.0.0:4318"
+	http { 
+              endpoint = "0.0.0.0:4318"
+        }
+
+	output {
+		metrics = [otelcol.processor.batch.default.input]
+		logs    = [otelcol.processor.batch.default.input]
+		traces  = [otelcol.processor.batch.default.input]
+	}
+}
+
+otelcol.processor.batch "default" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/otelcol.processor.batch/
+	output {
+		metrics = [otelcol.exporter.prometheus.grafana_cloud_prometheus.input]
+		logs    = [otelcol.exporter.loki.grafana_cloud_loki.input]
+		traces  = [otelcol.exporter.otlp.grafana_cloud_tempo.input]
+	}
+}
+
+otelcol.exporter.loki "grafana_cloud_loki" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/otelcol.exporter.loki/
+	forward_to = [loki.write.grafana_cloud_loki.receiver]
+}
+
+otelcol.exporter.prometheus "grafana_cloud_prometheus" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/otelcol.exporter.prometheus/
+	forward_to = [prometheus.remote_write.grafana_cloud_prometheus.receiver]
+}
+
+prometheus.remote_write "grafana_cloud_prometheus" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/prometheus.remote_write/
+	endpoint {
+		url = "<promtheus-endpoint>.grafana.net/api/prom/push"
+
+		basic_auth {
+			username = "<PROM_USERNAME>"
+			password = "<GRAFANA_CLOUD_API_KEY>"
+		}
+	}
+}
+
+loki.write "grafana_cloud_loki" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/loki.write/
+	endpoint {
+		url = "https://<loki-endpoint>.grafana.net/loki/api/v1/push"
+
+		basic_auth {
+			username = "<LOKI_USERNAME>"
+			password = "<GRAFANA_CLOUD_API_KEY>"
+		}
+	}
+}
+
+otelcol.exporter.otlp "grafana_cloud_tempo" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/otelcol.exporter.otlp/
+	client {
+		endpoint = "<tempo-endpoint>.grafana.net:443"
+		auth     = otelcol.auth.basic.grafana_cloud_tempo.handler
+	}
+}
+
+otelcol.auth.basic "grafana_cloud_tempo" {
+	// https://grafana.com/docs/agent/latest/static/flow/reference/components/otelcol.auth.basic/
+	username = "<TEMPO_USERNAME>"
+	password = "<GRAFANA_CLOUD_API_KEY>"
+} 
