@@ -1,0 +1,24 @@
+receivers:
+ otlp:
+   protocols:
+     grpc:
+     http:
+
+exporters:
+  logging:
+  otlp:
+    endpoint: "<grafa_agent_host>:4317"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [logging,otlp]
+    metrics:
+      receivers: [otlp]
+      exporters: [logging,otlp]
+  telemetry:
+    metrics:
+      address: localhost:8888
